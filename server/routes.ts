@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertActivityLogSchema, insertUserChallengeSchema, insertUserRewardSchema, insertUserAnswerSchema, insertUserAchievementSchema } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { openai, TUTOR_SYSTEM_PROMPT } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Replit Auth (provides /api/login, /api/logout, /api/callback)
@@ -761,6 +762,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ===== AI ASSISTANT ENDPOINTS =====
+  
+  // POST /api/chat - Send a message to the AI assistant
+  app.post("/api/chat", isAuthenticated, async (req, res) => {
+    try {
+      const { message, conversationHistory = [] } = req.body;
+      
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Build messages array with conversation history
+      const messages: any[] = [
+        { role: "system", content: TUTOR_SYSTEM_PROMPT }
+      ];
+
+      // Add conversation history (limit to last 10 messages for context)
+      const recentHistory = conversationHistory.slice(-10);
+      messages.push(...recentHistory);
+
+      // Add current user message
+      messages.push({ role: "user", content: message });
+
+      // Call OpenAI API
+      // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+      const completion = await openai.chat.completions.create({
+        model: "gpt-5-mini", // Using mini for faster responses for kids
+        messages,
+        max_completion_tokens: 500, // Keep responses concise for children
+        temperature: 0.8, // Slightly creative but consistent
+      });
+
+      const assistantMessage = completion.choices[0]?.message?.content || "Lo siento, no pude generar una respuesta. ¿Puedes intentar de nuevo?";
+
+      res.json({
+        message: assistantMessage,
+        conversationId: completion.id,
+      });
+    } catch (error) {
+      console.error("Error in AI chat:", error);
+      res.status(500).json({ 
+        error: "Error al comunicarse con el asistente",
+        message: "Lo siento, tuve un problema. ¿Puedes intentar de nuevo?" 
+      });
     }
   });
 
