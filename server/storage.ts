@@ -43,6 +43,7 @@ export interface IStorage {
   // User Challenge operations
   getUserChallenges(userId: string): Promise<(UserChallenge & { challenge: Challenge })[]>;
   getUserChallenge(userId: string, challengeId: string): Promise<UserChallenge | undefined>;
+  getUserChallengeById(id: string): Promise<UserChallenge | undefined>;
   createUserChallenge(userChallenge: InsertUserChallenge): Promise<UserChallenge>;
   updateUserChallenge(id: string, updates: Partial<Omit<UserChallenge, 'id'>>): Promise<UserChallenge | undefined>;
 
@@ -195,6 +196,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.userChallenges.values()).find(
       (uc) => uc.userId === userId && uc.challengeId === challengeId
     );
+  }
+
+  async getUserChallengeById(id: string): Promise<UserChallenge | undefined> {
+    return this.userChallenges.get(id);
   }
 
   async createUserChallenge(insertUserChallenge: InsertUserChallenge): Promise<UserChallenge> {

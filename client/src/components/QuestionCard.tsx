@@ -13,7 +13,7 @@ interface QuestionCardProps {
   subject: string;
   currentQuestion: number;
   totalQuestions: number;
-  onAnswer?: (isCorrect: boolean) => void;
+  onAnswer?: (isCorrect: boolean, selectedIndex: number) => void;
 }
 
 export default function QuestionCard({
@@ -29,7 +29,7 @@ export default function QuestionCard({
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
-  const handleOptionClick = (option: string) => {
+  const handleOptionClick = (option: string, index: number) => {
     if (showFeedback) return;
     
     setSelectedOption(option);
@@ -37,7 +37,7 @@ export default function QuestionCard({
     
     const isCorrect = option === correctAnswer;
     setTimeout(() => {
-      onAnswer?.(isCorrect);
+      onAnswer?.(isCorrect, index);
       setSelectedOption(null);
       setShowFeedback(false);
     }, 1500);
@@ -101,7 +101,7 @@ export default function QuestionCard({
             return (
               <Button
                 key={index}
-                onClick={() => handleOptionClick(option)}
+                onClick={() => handleOptionClick(option, index)}
                 disabled={showFeedback}
                 className={buttonClass}
                 variant={showFeedback ? "default" : "outline"}

@@ -1,73 +1,82 @@
 import { useState } from "react";
 import ChallengeCard from "@/components/ChallengeCard";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 import CelebrationModal from "@/components/CelebrationModal";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { Challenge, UserChallenge, UserStats } from "@shared/schema";
+
+type UserChallengeWithChallenge = UserChallenge & { challenge: Challenge };
+
+type ChallengeWithUserData = Challenge & {
+  userChallenge?: UserChallenge;
+  completed?: boolean;
+  progress?: number;
+};
 
 export default function Challenges() {
   const [selectedCategory, setSelectedCategory] = useState("todos");
   const [celebrationOpen, setCelebrationOpen] = useState(false);
   const [celebrationXP, setCelebrationXP] = useState(0);
+  const { user, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
 
-  // TODO: Remove mock data - fetch from backend
-  const challenges = [
-    {
-      id: 1,
-      title: "¡Contador Estrella! ⭐",
-      description: "Cuenta del 1 al 20 sin equivocarte. ¡Puedes usar tus dedos!",
-      xpReward: 100,
-      category: "aprendizaje",
-      difficulty: 1,
-      durationDays: 1,
+  const { data: allChallenges, isLoading: challengesLoading } = useQuery<Challenge[]>({
+    queryKey: ["/api/challenges"],
+  });
+
+  const { data: userChallenges, isLoading: userChallengesLoading } = useQuery<UserChallengeWithChallenge[]>({
+    queryKey: ["/api/me/challenges"],
+    enabled: !!user,
+  });
+
+  const isLoading = authLoading || challengesLoading || userChallengesLoading;
+
+  const startChallengeMutation = useMutation({
+    mutationFn: async (challengeId: string) => {
+      const res = await apiRequest("POST", `/api/me/challenges/${challengeId}/start`, {});
+      return res.json();
     },
-    {
-      id: 2,
-      title: "Artista Creativo 🎨",
-      description: "Dibuja tu animal favorito usando 5 colores diferentes",
-      xpReward: 200,
-      category: "creatividad",
-      difficulty: 2,
-      durationDays: 2,
-      progress: 65,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/me/challenges"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      toast({
+        title: "¡Desafío Iniciado!",
+        description: "¡Buena suerte! Puedes hacerlo",
+      });
     },
-    {
-      id: 3,
-      title: "Atleta del Día 🏃‍♂️",
-      description: "Haz 10 saltos de tijera. ¡Cuenta en voz alta!",
-      xpReward: 120,
-      category: "movimiento",
-      difficulty: 1,
-      durationDays: 1,
-      completed: true,
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo iniciar el desafío",
+        variant: "destructive",
+      });
     },
-    {
-      id: 4,
-      title: "Científico Curioso 🔬",
-      description: "Observa una planta durante 5 minutos y dibuja lo que ves",
-      xpReward: 180,
-      category: "aprendizaje",
-      difficulty: 2,
-      durationDays: 1,
+  });
+
+  const completeChallengeMutation = useMutation({
+    mutationFn: async (userChallengeId: string) => {
+      const res = await apiRequest("PATCH", `/api/me/challenges/${userChallengeId}/complete`, {});
+      return res.json();
     },
-    {
-      id: 5,
-      title: "Ayudante del Hogar 🏠",
-      description: "Guarda 5 juguetes en su lugar. ¡Ordena tu espacio!",
-      xpReward: 110,
-      category: "tareas",
-      difficulty: 1,
-      durationDays: 1,
+    onSuccess: (data: { stats: UserStats }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/me/challenges"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/me"] });
+      setCelebrationOpen(true);
     },
-    {
-      id: 6,
-      title: "Bailarín Estrella 💃",
-      description: "Inventa una coreografía de 30 segundos y preséntala",
-      xpReward: 200,
-      category: "creatividad",
-      difficulty: 3,
-      durationDays: 2,
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo completar el desafío",
+        variant: "destructive",
+      });
     },
-  ];
+  });
 
   const categories = [
     { value: "todos", label: "Todos" },
@@ -77,19 +86,58 @@ export default function Challenges() {
     { value: "tareas", label: "Tareas" },
   ];
 
+  const mergedChallenges: ChallengeWithUserData[] = (allChallenges || []).map((challenge) => {
+    const userChallenge = (userChallenges || []).find(
+      (uc) => uc.challengeId === challenge.id
+    );
+
+    return {
+      ...challenge,
+      userChallenge,
+      completed: userChallenge?.completed || false,
+      progress: userChallenge && !userChallenge.completed ? userChallenge.progress : undefined,
+    };
+  });
+
   const filteredChallenges = selectedCategory === "todos"
-    ? challenges
-    : challenges.filter((c) => c.category === selectedCategory);
+    ? mergedChallenges
+    : mergedChallenges.filter((c) => c.category === selectedCategory);
 
-  const handleAccept = (challenge: typeof challenges[0]) => {
-    console.log("Challenge accepted:", challenge);
+  const handleAccept = (challenge: ChallengeWithUserData) => {
+    startChallengeMutation.mutate(challenge.id);
   };
 
-  const handleComplete = (challenge: typeof challenges[0]) => {
-    console.log("Challenge completed:", challenge);
-    setCelebrationXP(challenge.xpReward);
-    setCelebrationOpen(true);
+  const handleComplete = (challenge: ChallengeWithUserData) => {
+    if (challenge.userChallenge) {
+      setCelebrationXP(challenge.xpReward);
+      completeChallengeMutation.mutate(challenge.userChallenge.id);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="pt-20 md:pt-24 pb-24 md:pb-8">
+          <div className="max-w-7xl mx-auto px-4 space-y-6">
+            <div>
+              <Skeleton className="h-12 w-64 mb-2" />
+              <Skeleton className="h-6 w-96" />
+            </div>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Skeleton key={i} className="h-10 w-24 rounded-xl" />
+              ))}
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Skeleton key={i} className="h-64 rounded-3xl" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -121,16 +169,31 @@ export default function Challenges() {
           </div>
 
           {/* Challenges Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredChallenges.map((challenge) => (
-              <ChallengeCard
-                key={challenge.id}
-                {...challenge}
-                onAccept={() => handleAccept(challenge)}
-                onComplete={() => handleComplete(challenge)}
-              />
-            ))}
-          </div>
+          {filteredChallenges.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredChallenges.map((challenge) => (
+                <ChallengeCard
+                  key={challenge.id}
+                  title={challenge.title}
+                  description={challenge.description}
+                  xpReward={challenge.xpReward}
+                  category={challenge.category}
+                  difficulty={challenge.difficulty}
+                  durationDays={challenge.durationDays}
+                  completed={challenge.completed}
+                  progress={challenge.progress}
+                  onAccept={() => handleAccept(challenge)}
+                  onComplete={() => handleComplete(challenge)}
+                />
+              ))}
+            </div>
+          ) : (
+            <Card className="rounded-3xl p-12 text-center">
+              <p className="text-lg text-muted-foreground">
+                No hay desafíos en esta categoría
+              </p>
+            </Card>
+          )}
         </div>
       </div>
 

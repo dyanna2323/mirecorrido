@@ -1,72 +1,61 @@
 import { useState } from "react";
 import RewardCard from "@/components/RewardCard";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 import PointsBadge from "@/components/PointsBadge";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { Reward, UserReward, UserStats } from "@shared/schema";
+
+type UserRewardWithReward = UserReward & { reward: Reward };
 
 export default function Rewards() {
   const [selectedCategory, setSelectedCategory] = useState("todos");
-  
-  // TODO: Remove mock data - fetch from backend
-  const currentPoints = 1250;
+  const { user, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
 
-  const rewards = [
-    {
-      id: 1,
-      title: "Helado Especial 🍦",
-      description: "Elige tu helado favorito con todos los toppings",
-      pointsRequired: 250,
-      category: "premios",
+  const { data: allRewards, isLoading: rewardsLoading } = useQuery<Reward[]>({
+    queryKey: ["/api/rewards"],
+  });
+
+  const { data: userRewards, isLoading: userRewardsLoading } = useQuery<UserRewardWithReward[]>({
+    queryKey: ["/api/me/rewards"],
+    enabled: !!user,
+  });
+
+  const { data: meData } = useQuery<{ user: any; stats: UserStats }>({
+    queryKey: ["/api/me"],
+    enabled: !!user,
+  });
+
+  const isLoading = authLoading || rewardsLoading || userRewardsLoading;
+  const currentPoints = meData?.stats.points || 0;
+
+  const redeemRewardMutation = useMutation({
+    mutationFn: async (rewardId: string) => {
+      const res = await apiRequest("POST", `/api/me/rewards/${rewardId}/redeem`, {});
+      return res.json();
     },
-    {
-      id: 2,
-      title: "30 Minutos de Videojuegos 🎮",
-      description: "Disfruta media hora adicional jugando tu juego favorito",
-      pointsRequired: 500,
-      category: "juegos",
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/me/rewards"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      toast({
+        title: "¡Premio Canjeado!",
+        description: "¡Disfruta tu premio!",
+      });
     },
-    {
-      id: 3,
-      title: "Noche de Película 🎬",
-      description: "Elige una película y palomitas para toda la familia",
-      pointsRequired: 700,
-      category: "tiempo_libre",
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo canjear el premio",
+        variant: "destructive",
+      });
     },
-    {
-      id: 4,
-      title: "Libro Nuevo 📚",
-      description: "¡Elige un libro nuevo en la librería!",
-      pointsRequired: 1100,
-      category: "premios",
-    },
-    {
-      id: 5,
-      title: "Día de Parque 🎡",
-      description: "¡Vamos al parque o área de juegos este fin de semana!",
-      pointsRequired: 1200,
-      category: "salidas",
-    },
-    {
-      id: 6,
-      title: "Nuevo Juguete Pequeño 🧸",
-      description: "¡Visita la tienda y elige un juguete pequeño!",
-      pointsRequired: 1500,
-      category: "premios",
-    },
-    {
-      id: 7,
-      title: "Ir al Parque",
-      description: "Una tarde divertida en el parque de diversiones",
-      pointsRequired: 2000,
-      category: "salidas",
-    },
-    {
-      id: 8,
-      title: "Clase de lo que Quieras 🎨",
-      description: "Una clase de arte, música, deporte o lo que elijas",
-      pointsRequired: 2000,
-      category: "especiales",
-    },
-  ];
+  });
 
   const categories = [
     { value: "todos", label: "Todos" },
@@ -78,14 +67,48 @@ export default function Rewards() {
   ];
 
   const filteredRewards = selectedCategory === "todos"
-    ? rewards
-    : rewards.filter((r) => r.category === selectedCategory);
+    ? (allRewards || [])
+    : (allRewards || []).filter((r) => r.category === selectedCategory);
 
-  const handleRedeem = (reward: typeof rewards[0]) => {
+  const handleRedeem = (reward: Reward) => {
     if (currentPoints >= reward.pointsRequired) {
-      console.log("Reward redeemed:", reward);
+      redeemRewardMutation.mutate(reward.id);
+    } else {
+      toast({
+        title: "Puntos Insuficientes",
+        description: `Necesitas ${reward.pointsRequired - currentPoints} puntos más`,
+        variant: "destructive",
+      });
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="pt-20 md:pt-24 pb-24 md:pb-8">
+          <div className="max-w-7xl mx-auto px-4 space-y-6">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <Skeleton className="h-12 w-64 mb-2" />
+                <Skeleton className="h-6 w-96" />
+              </div>
+              <Skeleton className="h-12 w-32" />
+            </div>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Skeleton key={i} className="h-10 w-24 rounded-xl" />
+              ))}
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Skeleton key={i} className="h-64 rounded-3xl" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -120,16 +143,27 @@ export default function Rewards() {
           </div>
 
           {/* Rewards Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredRewards.map((reward) => (
-              <RewardCard
-                key={reward.id}
-                {...reward}
-                currentPoints={currentPoints}
-                onRedeem={() => handleRedeem(reward)}
-              />
-            ))}
-          </div>
+          {filteredRewards.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredRewards.map((reward) => (
+                <RewardCard
+                  key={reward.id}
+                  title={reward.title}
+                  description={reward.description}
+                  pointsRequired={reward.pointsRequired}
+                  category={reward.category}
+                  currentPoints={currentPoints}
+                  onRedeem={() => handleRedeem(reward)}
+                />
+              ))}
+            </div>
+          ) : (
+            <Card className="rounded-3xl p-12 text-center">
+              <p className="text-lg text-muted-foreground">
+                No hay premios en esta categoría
+              </p>
+            </Card>
+          )}
         </div>
       </div>
     </div>

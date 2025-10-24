@@ -1,9 +1,330 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertActivityLogSchema, insertUserChallengeSchema, insertUserRewardSchema, insertUserAnswerSchema, insertUserAchievementSchema } from "@shared/schema";
+import { z } from "zod";
+
+// Extend Express Request type to include session
+declare module 'express-session' {
+  interface SessionData {
+    userId: string;
+  }
+}
+
+// Authentication middleware
+function requireAuth(req: Request, res: Response, next: NextFunction) {
+  if (!req.session?.userId) {
+    return res.status(401).json({ error: "Unauthorized - Please log in" });
+  }
+  next();
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // ===== AUTHENTICATED USER ENDPOINTS =====
+  
+  // GET /api/me - Get current user profile and stats
+  app.get("/api/me", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      const stats = await storage.getUserStats(userId);
+      if (!stats) {
+        return res.status(404).json({ error: "User stats not found" });
+      }
+      
+      res.json({ user, stats });
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/dashboard - Get dashboard data
+  app.get("/api/dashboard", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      
+      // Get user stats
+      const stats = await storage.getUserStats(userId);
+      if (!stats) {
+        return res.status(404).json({ error: "User stats not found" });
+      }
+      
+      // Get active challenges (not completed)
+      const allUserChallenges = await storage.getUserChallenges(userId);
+      const activeChallenges = allUserChallenges.filter(uc => !uc.completed);
+      
+      // Get recent achievements (last 5)
+      const allAchievements = await storage.getUserAchievements(userId);
+      const recentAchievements = allAchievements.slice(0, 5);
+      
+      res.json({
+        stats,
+        activeChallenges,
+        recentAchievements,
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/me/challenges - Get user's challenges with progress
+  app.get("/api/me/challenges", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const userChallenges = await storage.getUserChallenges(userId);
+      res.json(userChallenges);
+    } catch (error) {
+      console.error("Error fetching user challenges:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/me/challenges/:id/start - Start a challenge
+  app.post("/api/me/challenges/:id/start", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const challengeId = req.params.id;
+      
+      // Check if challenge exists
+      const challenge = await storage.getChallenge(challengeId);
+      if (!challenge) {
+        return res.status(404).json({ error: "Challenge not found" });
+      }
+      
+      // Check if user already started this challenge
+      const existing = await storage.getUserChallenge(userId, challengeId);
+      if (existing) {
+        return res.status(400).json({ error: "Challenge already started" });
+      }
+      
+      // Create user challenge
+      const userChallenge = await storage.createUserChallenge({
+        userId,
+        challengeId,
+        progress: 0,
+        completed: false,
+        completedAt: null,
+      });
+      
+      res.status(201).json(userChallenge);
+    } catch (error) {
+      console.error("Error starting challenge:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // PATCH /api/me/challenges/:id/complete - Complete a challenge
+  app.patch("/api/me/challenges/:id/complete", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const userChallengeId = req.params.id;
+      
+      // Fetch the user challenge first
+      const existingUserChallenge = await storage.getUserChallengeById(userChallengeId);
+      
+      if (!existingUserChallenge) {
+        return res.status(404).json({ error: "User challenge not found" });
+      }
+      
+      // Verify the challenge belongs to the user BEFORE updating
+      if (existingUserChallenge.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden - Challenge does not belong to user" });
+      }
+      
+      // Now update the user challenge
+      const userChallenge = await storage.updateUserChallenge(userChallengeId, {
+        completed: true,
+        completedAt: new Date(),
+        progress: 100,
+      });
+      
+      if (!userChallenge) {
+        return res.status(500).json({ error: "Failed to update user challenge" });
+      }
+      
+      // Get the challenge details
+      const challenge = await storage.getChallenge(existingUserChallenge.challengeId);
+      if (!challenge) {
+        return res.status(404).json({ error: "Challenge not found" });
+      }
+      
+      // Update user stats
+      const stats = await storage.getUserStats(userId);
+      if (!stats) {
+        return res.status(404).json({ error: "User stats not found" });
+      }
+      
+      const updatedStats = await storage.updateUserStats(userId, {
+        xp: stats.xp + challenge.xpReward,
+        points: stats.points + challenge.xpReward,
+      });
+      
+      // Create activity log
+      await storage.createActivityLog({
+        userId,
+        type: "challenge",
+        title: `Completaste '${challenge.title}'`,
+        xp: challenge.xpReward,
+      });
+      
+      res.json({ userChallenge, stats: updatedStats });
+    } catch (error) {
+      console.error("Error completing challenge:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/me/rewards - Get user's redeemed rewards
+  app.get("/api/me/rewards", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const userRewards = await storage.getUserRewards(userId);
+      res.json(userRewards);
+    } catch (error) {
+      console.error("Error fetching user rewards:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/me/rewards/:id/redeem - Redeem a reward
+  app.post("/api/me/rewards/:id/redeem", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const rewardId = req.params.id;
+      
+      // Get the reward
+      const reward = await storage.getReward(rewardId);
+      if (!reward) {
+        return res.status(404).json({ error: "Reward not found" });
+      }
+      
+      // Check if user has enough points
+      const stats = await storage.getUserStats(userId);
+      if (!stats) {
+        return res.status(404).json({ error: "User stats not found" });
+      }
+      
+      if (stats.points < reward.pointsRequired) {
+        return res.status(403).json({ error: "Insufficient points" });
+      }
+      
+      // Deduct points
+      const updatedStats = await storage.updateUserStats(userId, {
+        points: stats.points - reward.pointsRequired,
+      });
+      
+      // Create user reward
+      const userReward = await storage.createUserReward({
+        userId,
+        rewardId,
+      });
+      
+      // Create activity log
+      await storage.createActivityLog({
+        userId,
+        type: "reward",
+        title: `Canjeaste '${reward.title}'`,
+        xp: -reward.pointsRequired,
+      });
+      
+      res.status(201).json({ userReward, stats: updatedStats });
+    } catch (error) {
+      console.error("Error redeeming reward:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/me/achievements - Get user's unlocked achievements
+  app.get("/api/me/achievements", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const userAchievements = await storage.getUserAchievements(userId);
+      res.json(userAchievements);
+    } catch (error) {
+      console.error("Error fetching user achievements:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/me/answers - Get user's answer history
+  app.get("/api/me/answers", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const userAnswers = await storage.getUserAnswers(userId);
+      res.json(userAnswers);
+    } catch (error) {
+      console.error("Error fetching user answers:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/me/answers - Submit an answer
+  app.post("/api/me/answers", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      
+      // Validate request body
+      const validatedData = insertUserAnswerSchema.parse({
+        ...req.body,
+        userId,
+      });
+      
+      // Get the question
+      const question = await storage.getQuestion(validatedData.questionId);
+      if (!question) {
+        return res.status(404).json({ error: "Question not found" });
+      }
+      
+      // Create user answer
+      const userAnswer = await storage.createUserAnswer(validatedData);
+      
+      // Get current stats
+      const stats = await storage.getUserStats(userId);
+      if (!stats) {
+        return res.status(404).json({ error: "User stats not found" });
+      }
+      
+      let updatedStats = stats;
+      
+      // If correct, update user stats
+      if (validatedData.isCorrect) {
+        updatedStats = await storage.updateUserStats(userId, {
+          xp: stats.xp + question.xpReward,
+          points: stats.points + question.xpReward,
+        }) || stats;
+        
+        // Create activity log
+        await storage.createActivityLog({
+          userId,
+          type: "question",
+          title: `Respondiste correctamente en ${question.subject}`,
+          xp: question.xpReward,
+        });
+      }
+      
+      res.status(201).json({
+        userAnswer,
+        stats: updatedStats,
+        isCorrect: validatedData.isCorrect,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request body", details: error.errors });
+      }
+      console.error("Error submitting answer:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ===== LEGACY/BACKWARDS COMPATIBILITY ROUTES =====
   
   // ===== USER STATS ROUTES =====
   app.get("/api/user-stats/:userId", async (req, res) => {

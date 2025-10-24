@@ -4,7 +4,13 @@ import QuestionCard from "@/components/QuestionCard";
 import CelebrationModal from "@/components/CelebrationModal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Brain, BookOpen } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { Question, UserAnswer, UserStats } from "@shared/schema";
 
 export default function Questions() {
   const [, navigate] = useLocation();
@@ -13,8 +19,10 @@ export default function Questions() {
   const [score, setScore] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
   const [quizCompleted, setQuizCompleted] = useState(false);
+  const [totalXP, setTotalXP] = useState(0);
+  const { user, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
 
-  // TODO: Remove mock data - fetch from backend
   const subjects = [
     {
       id: "maths",
@@ -30,55 +38,50 @@ export default function Questions() {
     },
   ];
 
-  const questions = {
-    maths: [
-      {
-        question: "¿Cuánto es 5 + 3?",
-        options: ["6", "7", "8", "9"],
-        correctAnswer: "8",
-        difficulty: 2,
-      },
-      {
-        question: "¿Cuántas patas tiene un perro?",
-        options: ["2", "3", "4", "5"],
-        correctAnswer: "4",
-        difficulty: 2,
-      },
-      {
-        question: "¿Cuánto es 10 - 3?",
-        options: ["5", "6", "7", "8"],
-        correctAnswer: "7",
-        difficulty: 2,
-      },
-    ],
-    english: [
-      {
-        question: "¿Cómo se dice 'perro' en inglés?",
-        options: ["Cat", "Dog", "Fish", "Bird"],
-        correctAnswer: "Dog",
-        difficulty: 2,
-      },
-      {
-        question: "¿Qué color es 'red' en español?",
-        options: ["Azul", "Verde", "Rojo", "Amarillo"],
-        correctAnswer: "Rojo",
-        difficulty: 2,
-      },
-      {
-        question: "¿Cómo se dice 'casa' en inglés?",
-        options: ["House", "Car", "Tree", "Book"],
-        correctAnswer: "House",
-        difficulty: 2,
-      },
-    ],
-  };
+  const { data: questions, isLoading: questionsLoading } = useQuery<Question[]>({
+    queryKey: [`/api/questions/${selectedSubject}`],
+    enabled: !!selectedSubject,
+  });
 
-  const handleAnswer = (isCorrect: boolean) => {
-    if (isCorrect) {
-      setScore(score + 1);
-    }
+  const { data: userAnswers } = useQuery<UserAnswer[]>({
+    queryKey: ["/api/me/answers"],
+    enabled: !!user,
+  });
 
-    const currentQuestions = selectedSubject ? questions[selectedSubject as keyof typeof questions] : [];
+  const submitAnswerMutation = useMutation({
+    mutationFn: async ({ questionId, selectedAnswer }: { questionId: string; selectedAnswer: number }) => {
+      const res = await apiRequest("POST", "/api/me/answers", { questionId, selectedAnswer });
+      return res.json();
+    },
+    onSuccess: (data: { isCorrect: boolean; xpEarned: number; stats: UserStats }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/me/answers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      
+      if (data.isCorrect) {
+        setScore(score + 1);
+        setTotalXP(totalXP + data.xpEarned);
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo enviar la respuesta",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAnswer = (isCorrect: boolean, selectedAnswerIndex: number) => {
+    const currentQuestion = questions?.[currentQuestionIndex];
+    if (!currentQuestion) return;
+
+    submitAnswerMutation.mutate({
+      questionId: currentQuestion.id,
+      selectedAnswer: selectedAnswerIndex,
+    });
+
+    const currentQuestions = questions || [];
     
     if (currentQuestionIndex < currentQuestions.length - 1) {
       setTimeout(() => {
@@ -100,6 +103,7 @@ export default function Questions() {
     setSelectedSubject(null);
     setCurrentQuestionIndex(0);
     setScore(0);
+    setTotalXP(0);
     setQuizCompleted(false);
   };
 
@@ -144,8 +148,37 @@ export default function Questions() {
     );
   }
 
-  const currentQuestions = questions[selectedSubject as keyof typeof questions];
+  if (questionsLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="pt-20 md:pt-24 pb-24 md:pb-8">
+          <div className="max-w-5xl mx-auto px-4">
+            <Skeleton className="h-96 rounded-3xl" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const currentQuestions = questions || [];
   const currentQuestion = currentQuestions[currentQuestionIndex];
+
+  if (!currentQuestion && !quizCompleted) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="pt-20 md:pt-24 pb-24 md:pb-8">
+          <div className="max-w-5xl mx-auto px-4">
+            <Card className="rounded-3xl p-12 text-center space-y-6">
+              <h2 className="text-2xl font-bold">No hay preguntas disponibles</h2>
+              <Button onClick={resetQuiz} className="rounded-xl">
+                Elegir Otro Tema
+              </Button>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -155,7 +188,7 @@ export default function Questions() {
             <QuestionCard
               question={currentQuestion.question}
               options={currentQuestion.options}
-              correctAnswer={currentQuestion.correctAnswer}
+              correctAnswer={currentQuestion.options[currentQuestion.correctAnswer]}
               difficulty={currentQuestion.difficulty}
               subject={selectedSubject}
               currentQuestion={currentQuestionIndex + 1}
@@ -193,7 +226,7 @@ export default function Questions() {
         onOpenChange={setShowCelebration}
         title="¡Quiz Completado!"
         message={`Respondiste ${score} de ${currentQuestions.length} correctamente`}
-        xpEarned={score * 20}
+        xpEarned={totalXP}
         onContinue={handleContinue}
       />
     </div>
