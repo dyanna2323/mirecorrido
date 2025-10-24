@@ -110,6 +110,7 @@ export default function Profile() {
   const joinedDate = userData.createdAt 
     ? format(new Date(userData.createdAt), "MMMM yyyy", { locale: es })
     : "Recientemente";
+  const displayName = [userData.firstName, userData.lastName].filter(Boolean).join(" ") || "Usuario";
 
   return (
     <div className="min-h-screen bg-background">
@@ -127,9 +128,9 @@ export default function Profile() {
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div className="relative">
                 <Avatar className="w-32 h-32">
-                  <AvatarImage src={userData.imageUrl || ""} alt={userData.name} />
+                  <AvatarImage src={userData.profileImageUrl || ""} alt={displayName} />
                   <AvatarFallback className="text-3xl bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                    {userData.name.split(" ").map((n) => n[0]).join("")}
+                    {displayName.split(" ").map((n) => n[0]).join("")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="absolute -bottom-2 -right-2">
@@ -138,7 +139,7 @@ export default function Profile() {
               </div>
 
               <div className="flex-1 text-center md:text-left space-y-2">
-                <h2 className="text-3xl font-bold">{userData.name}</h2>
+                <h2 className="text-3xl font-bold">{displayName}</h2>
                 {userData.email && (
                   <p className="text-muted-foreground">{userData.email}</p>
                 )}
@@ -217,14 +218,14 @@ export default function Profile() {
             {activityLog && activityLog.length > 0 ? (
               <div className="space-y-3">
                 {activityLog.map((activity, index) => {
-                  const bgColors = {
+                  const bgColors: Record<string, string> = {
                     challenge_completed: "bg-green-100 dark:bg-green-900/30",
                     achievement_unlocked: "bg-purple-100 dark:bg-purple-900/30",
                     penalty_applied: "bg-red-100 dark:bg-red-900/30",
                     reward_redeemed: "bg-blue-100 dark:bg-blue-900/30",
                     question_answered: "bg-yellow-100 dark:bg-yellow-900/30",
                   };
-                  const iconColors = {
+                  const iconColors: Record<string, string> = {
                     challenge_completed: "text-green-600 dark:text-green-400",
                     achievement_unlocked: "text-purple-600 dark:text-purple-400",
                     penalty_applied: "text-red-600 dark:text-red-400",
@@ -250,7 +251,7 @@ export default function Profile() {
                       className="flex items-center gap-4 p-4 bg-muted rounded-2xl"
                       data-testid={`activity-${index}`}
                     >
-                      <div className={`w-12 h-12 rounded-xl ${bgColors[activity.type]} flex items-center justify-center`}>
+                      <div className={`w-12 h-12 rounded-xl ${bgColors[activity.type] || "bg-gray-100 dark:bg-gray-900/30"} flex items-center justify-center`}>
                         {activity.type === "challenge_completed" && <Trophy className={`w-6 h-6 ${iconColors[activity.type]}`} />}
                         {activity.type === "achievement_unlocked" && <Target className={`w-6 h-6 ${iconColors[activity.type]}`} />}
                         {activity.type === "penalty_applied" && <AlertCircle className={`w-6 h-6 ${iconColors[activity.type]}`} />}
@@ -258,15 +259,15 @@ export default function Profile() {
                         {activity.type === "question_answered" && <Trophy className={`w-6 h-6 ${iconColors[activity.type]}`} />}
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold">{activity.description}</p>
-                        {activity.details && (
-                          <p className="text-sm text-muted-foreground">{activity.details}</p>
+                        <p className="font-semibold">{activity.title}</p>
+                        {activity.reason && (
+                          <p className="text-sm text-muted-foreground">{activity.reason}</p>
                         )}
                         <p className="text-sm text-muted-foreground">{getTimeAgo(activity.createdAt)}</p>
                       </div>
-                      {activity.xpChange !== 0 && (
-                        <span className={`font-bold ${activity.xpChange > 0 ? "text-yellow-600" : "text-red-600"}`}>
-                          {activity.xpChange > 0 ? "+" : ""}{activity.xpChange} XP
+                      {activity.xp !== 0 && (
+                        <span className={`font-bold ${activity.xp > 0 ? "text-yellow-600" : "text-red-600"}`}>
+                          {activity.xp > 0 ? "+" : ""}{activity.xp} XP
                         </span>
                       )}
                     </div>
