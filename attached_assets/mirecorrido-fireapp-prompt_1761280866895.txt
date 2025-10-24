@@ -1,0 +1,202 @@
+🔧 Prompt Unificado — Fireapp (Mirecorrido)
+
+Objetivo:
+Crear una aplicación web llamada “Mirecorrido” (en español) que permita a los usuarios completar desafíos, ver logros, canjear recompensas, revisar ranking, lanzar juegos, chatear y editar su perfil. La app debe ser una SPA con React + Vite + Tailwind, con rutas, accesibilidad, rendimiento (code-splitting), y preparada para desplegar en subruta /mirecorrido/ (GitHub Pages).
+
+Tecnología solicitada:
+- React + Vite + Tailwind
+- SPA con React Router
+- Code splitting por rutas (React.lazy + Suspense)
+- Buenas prácticas de accesibilidad (WCAG AA)
+- Español (ES)
+
+Rutas:
+- / (redirige a /dashboard)
+- /dashboard
+- /challenges
+- /achievements
+- /rewards
+- /leaderboard
+- /games
+- /chat
+- /profile
+- 404 comodín
+
+===== 1) Datos (colecciones y semillas) =====
+Definir colecciones y semillas mínimas en el estado interno / mock data.
+
+users {
+  id, nombre, avatarUrl, xp:number, nivel:number, saldo:number
+}
+
+challenges {
+  id, titulo, descripcion, categoria:("diseño"|"código"|"marketing"|"otros"),
+  puntos:number, estado:("pendiente"|"completado"), autorUserId, createdAt
+}
+
+achievements {
+  id, userId, titulo, icono, descripcion, earnedAt
+}
+
+rewards {
+  id, titulo, costo:number, stock:number, imagenUrl?, activo:boolean
+}
+
+leaderboard {
+  id, userId, nombre, puntos:number, posicion:number, avatarUrl
+}
+
+messages {
+  id, userId, contenido, role:("user"|"assistant"), createdAt
+}
+
+Semillas:
+- 1 usuario actual: { xp: 1200, nivel: 5, saldo: 300 }
+- Desafíos: 8 (2 por categoría), 3 ya completados
+- Logros: 5
+- Recompensas: 6 (algunas con stock=0)
+- Leaderboard: 10 entradas (usuario actual resaltado)
+- Chat: 3 mensajes alternando roles
+
+===== 2) Tema y estilo (Tailwind/Design System) =====
+- Color primario: morado #7c3aed; neutrales para fondos y textos.
+- Tipografía sans (Inter o similar).
+- Componentes: Button (filled/ghost/disabled), Card (header/content), Badge, Chip (para filtros).
+- Bordes redondeados (rounded-2xl), sombras suaves, padding cómodo.
+- Soportar prefers-reduced-motion: con esa preferencia, desactivar animaciones/transiciones y efectos (como confetti).
+- Skeletons para estados de carga.
+- Diseño responsive:
+  - Desktop: sidebar izquierda.
+  - Móvil: bottom-nav pegado con iconos/labels.
+
+===== 3) Accesibilidad =====
+- Enlace “Saltar al contenido” visible al enfocar, href="#main".
+- Estructura landmarks: header, main(#main), footer.
+- Focus visible en todos los controles.
+- aria-current="page" en el item de navegación activo.
+- Todas las imágenes con alt; si decorativas, alt="".
+- Toasts/mensajes en aria-live="polite".
+- Soporte teclado en navegación y formularios.
+- Respetar prefers-reduced-motion (sin animaciones fuertes).
+
+===== 4) Layout y navegación =====
+Layout base:
+- Header con título “Mirecorrido”.
+- Sidebar (desktop) o bottom-nav (móvil) con items:
+  Inicio(/dashboard), Desafíos, Logros, Recompensas, Ranking, Juegos, Chat, Perfil.
+- NavLink activo con fondo morado-50 y texto morado-700, y aria-current="page".
+- <main id="main"> para el contenido de cada ruta.
+
+===== 5) Pantallas =====
+
+(5.1) Dashboard (/dashboard)
+- Tarjeta de bienvenida con nombre del usuario y barra de progreso al siguiente nivel (usa xp/nivel del usuario).
+- Métricas rápidas (cards): “Desafíos completados”, “Puntos disponibles” (saldo), “Logros”.
+- CTA: “Completa 1 desafío para subir de nivel”.
+- Skeletons mientras carga.
+- Confetti SOLO cuando realmente suba de nivel y si NO hay prefers-reduced-motion.
+
+(5.2) Desafíos (/challenges)
+- Lista con chip-filtros por categoría (todos, diseño, código, marketing, otros).
+- Persistir filtro en URL (?cat=...), y que sobreviva back/forward.
+- Ítem de desafío: título, breve descripción, puntos, estado (pendiente/completado), botón “Completar”.
+- Empty state útil con CTA (“Explora desafíos recomendados”).
+- Accesibilidad: botón con aria-label claro; foco visible.
+- Performance: si la lista crece, paginación o virtualización.
+
+(5.3) Logros (/achievements)
+- Grid de logros: icono, título, descripción, fecha earnedAt.
+- Empty state: “Aún no tienes logros. ¡Completa desafíos para conseguirlos!”
+- Virtualización si hay más de 100 elementos.
+
+(5.4) Recompensas (/rewards)
+- Grid/lista de recompensas: imagen (si hay), título, costo en puntos, stock, estado (activo).
+- Botón “Canjear”:
+  - Deshabilitado si saldo < costo o stock == 0; mostrar tooltip con motivo (“Saldo insuficiente” / “Sin stock”).
+  - Modal de confirmación antes de descontar puntos.
+- Tras canjear: saldo -= costo; stock -=1; toast de éxito; control de doble clic; manejo de error con toast.
+
+(5.5) Ranking (/leaderboard)
+- Tabla simple: posición, avatar, nombre, puntos.
+- Resaltar la fila del usuario actual.
+- Orden estable; para empates, ordenar por nombre.
+
+(5.6) Juegos (/games)
+- Tarjetas de juegos con botón “Jugar”.
+- Modal o página secundaria con detalle mínimo.
+- Al volver, restaurar el scroll de la lista.
+
+(5.7) Chat (/chat)
+- Timeline de mensajes con roles user/assistant, conserva saltos de línea.
+- Input + botón enviar; indicador de “escribiendo” o spinner al simular respuesta.
+- aria-live="polite" para anunciar mensaje recibido.
+- Botón “Detener” si hay generación en curso (simulada si no hay backend real).
+
+(5.8) Perfil (/profile)
+- Formulario: avatarUrl (texto), nombre (texto).
+- Validación inline (requerido, longitud).
+- Botones: Guardar, Cerrar sesión (confirmación), Eliminar cuenta (doble confirmación).
+- Toast accesible de éxito/errores.
+
+(5.9) Ruta 404
+- Página con mensaje “Página no encontrada” y link para volver a Inicio.
+
+===== 6) Acciones (mutaciones y lógica) =====
+
+(6.1) Completar desafío (input: challengeId)
+- Si ya está completado → toast “Ya estaba completado”.
+- Si pendiente:
+  - estado = "completado"
+  - saldo del usuario += puntos del desafío
+  - toast éxito: “Desafío completado 🎉”
+  - Optimistic UI: actualizar al instante, confirmar luego.
+
+(6.2) Canjear recompensa (input: rewardId)
+- Validaciones:
+  - Si saldo < costo → error “Saldo insuficiente”.
+  - Si stock == 0 → error “Sin stock”.
+- Efectos:
+  - saldo -= costo, stock -= 1 (si todo ok)
+  - toast éxito: “Recompensa canjeada”
+  - Optimistic UI + rollback si falla
+
+(6.3) Chat enviar (input: texto)
+- Agregar mensaje del usuario inmediatamente.
+- Mostrar placeholder del assistant con spinner/“escribiendo…” y luego reemplazar con respuesta simulada.
+- Manejar multilinea y scroll a último mensaje.
+
+(6.4) Guardar perfil
+- Validar nombre requerido.
+- Actualizar usuario; toast “¡Listo! Cambios guardados.”
+
+===== 7) Copys (ES) =====
+Botones: Guardar, Cancelar, Completar, Canjear, Ver más, Cerrar sesión, Eliminar cuenta.
+Mensajes:
+- Éxito: “¡Listo! Cambios guardados.”, “Desafío completado 🎉”, “Recompensa canjeada”.
+- Error: “Saldo insuficiente”, “Sin stock”, “Algo salió mal, inténtalo de nuevo”.
+Empty states:
+- Desafíos: “No encontramos desafíos con ese filtro. Prueba otra categoría.”
+- Logros: “Aún no tienes logros. ¡Completa desafíos para conseguirlos!”
+- Recompensas: “No hay recompensas disponibles por ahora.”
+Loading: “Cargando…”
+404: “Página no encontrada. Volver al inicio”
+
+===== 8) Rendimiento =====
+- Code splitting por ruta con React.lazy + Suspense, fallback “Cargando…”.
+- Skeletons visibles durante la carga de listas/paneles.
+- Evitar re-render costoso en listas; usar keys estables.
+
+===== 9) Metadatos y PWA =====
+- <html lang="es">, <title>Mirecorrido — Tu progreso y desafíos</title>
+- meta description: “Sigue tus desafíos, logros y recompensas en Mirecorrido.”
+- Manifest (opcional en export): name/short_name “Mirecorrido”, start_url “/”, theme_color “#7c3aed”.
+- Iconos: favicon.svg morado, icono 512x512.
+
+===== 10) Despliegue (si Fireapp exporta a Vite/React) =====
+- Para desplegar en subruta /mirecorrido/ (GitHub Pages):
+  - En vite.config: base: '/mirecorrido/'
+  - BrowserRouter con basename="/mirecorrido"
+  - Generar 404.html que sirva de fallback SPA (o copiar dist/index.html a dist/404.html)
+  - Variables .env con prefijo VITE_ (p.ej. VITE_BASE44_APP_ID)
+- Si la exportación incluye GitHub Actions:
+  - Workflow que construye la app y sube dist/ a Pages con un paso para crear 404.html.
