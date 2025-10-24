@@ -91,22 +91,19 @@ Preferred communication style: Simple, everyday language.
 
 ### Authentication and Authorization
 
-**Implemented**: Full authentication system with dual login methods:
-1. **Username/Password Authentication** (`server/auth.ts`):
-   - Bcrypt password hashing
-   - User registration with validation
+**Implemented**: Username/password authentication system with session management:
+
+1. **Username/Password Authentication** (`server/routes.ts`, `server/index.ts`):
+   - Bcrypt password hashing for secure credential storage
+   - User registration with Zod validation
    - Login with credential verification
-   
-2. **Google OAuth 2.0 Integration**:
-   - OAuth flow with GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
-   - Automatic user creation on first Google login
-   - Profile image import from Google account
+   - Protected API endpoints with `requireAuth` middleware
 
 **Session Management**:
-- Express sessions with PostgreSQL session store
-- Session data stored in `sessions` table
+- Express sessions with MemoryStore (in-memory storage)
+- Session cookies with 24-hour maxAge
 - Middleware for protected routes (`requireAuth`)
-- User data available via `req.session.userId`
+- User ID stored in `req.session.userId`
 
 **Frontend Integration** (`client/src/hooks/useAuth.ts`):
 - `useAuth` hook for authentication state
@@ -117,8 +114,9 @@ Preferred communication style: Simple, everyday language.
 **Landing Page** (`client/src/pages/Landing.tsx`):
 - Playful Nintendo-style design for kids 5-8
 - Login and registration forms with validation
-- Google OAuth login button
 - Spanish language interface
+
+**Note**: Google OAuth integration is supported in the schema (googleId, email, profileImageUrl fields) but not yet implemented. This can be added as a future enhancement.
 
 ### Component Architecture
 
