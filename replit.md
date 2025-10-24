@@ -23,6 +23,7 @@ Preferred communication style: Simple, everyday language.
 - Achievements (`/achievements`)
 - Profile (`/profile`)
 - Questions (`/questions`)
+- AI Assistant (`/assistant`)
 
 **State Management**: TanStack Query (React Query) for server state management and data fetching. Query client configured in `client/src/lib/queryClient.ts` with custom fetch utilities.
 
@@ -124,6 +125,44 @@ Preferred communication style: Simple, everyday language.
 - Spanish language interface
 - Lists all available login providers
 
+### AI Assistant Feature
+
+**Implementation**: OpenAI-powered educational tutor integrated via Replit AI Integrations (October 2025)
+
+**Backend Configuration** (`server/openai.ts`):
+- OpenAI client configured with Replit AI Integrations (no API key management required)
+- Uses `gpt-5-mini` model for faster responses appropriate for children
+- Kid-friendly system prompt in Spanish designed for ages 5-8
+- Conversation management with history context (last 10 messages)
+- Response length limited to 500 tokens for brevity
+
+**AI Tutor Personality**:
+- Patient and encouraging teaching style
+- Guides children to think rather than providing direct answers
+- Supports subjects: basic math, reading/writing, science, creativity
+- Spanish language interface
+- No emoji usage (follows project guidelines)
+- Positive, safe learning environment
+
+**API Endpoint**:
+- `POST /api/chat` - Authenticated chat endpoint
+  - Request: `{ message: string, conversationHistory: Message[] }`
+  - Response: `{ message: string, conversationId: string }`
+  - Validates message content and handles errors gracefully
+
+**Frontend Interface** (`client/src/pages/AIAssistant.tsx`):
+- Chat interface with message history and auto-scroll
+- Real-time typing state during AI responses
+- Error handling with kid-friendly messages
+- Tips card explaining how to use the assistant
+- Conversation state managed with React Query mutations
+- Functional state updates to prevent stale conversation history
+
+**Integration Details**:
+- Billed to Replit credits (no separate OpenAI account needed)
+- Automatic API key and authentication management via Replit
+- Base URL configured through environment variables
+
 ### Component Architecture
 
 **Reusable Components** (`client/src/components/`):
@@ -156,6 +195,10 @@ Preferred communication style: Simple, everyday language.
 
 **Data Fetching**:
 - `@tanstack/react-query` - Server state management
+
+**AI Integration**:
+- `openai` - OpenAI Node.js SDK for AI Assistant feature
+- Configured via Replit AI Integrations (environment variables managed automatically)
 
 **Database**:
 - `@neondatabase/serverless` - Serverless PostgreSQL client
