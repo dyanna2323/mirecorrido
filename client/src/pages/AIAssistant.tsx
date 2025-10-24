@@ -20,7 +20,7 @@ export default function AIAssistant() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "¡Hola! 👋 Soy tu Ayudante Mágico. Estoy aquí para ayudarte a aprender y responder tus preguntas. ¿En qué te puedo ayudar hoy?",
+      content: "Hola! Soy tu Ayudante Mágico. Estoy aquí para ayudarte a aprender y responder tus preguntas. ¿En qué te puedo ayudar hoy?",
       timestamp: new Date(),
     },
   ]);
@@ -34,9 +34,9 @@ export default function AIAssistant() {
   }, [messages]);
 
   const chatMutation = useMutation({
-    mutationFn: async (message: string) => {
-      // Build conversation history for context
-      const conversationHistory = messages.map(msg => ({
+    mutationFn: async ({ message, priorHistory }: { message: string; priorHistory: Message[] }) => {
+      // Build conversation history (only prior messages, not the current one)
+      const conversationHistory = priorHistory.map(msg => ({
         role: msg.role,
         content: msg.content,
       }));
@@ -58,7 +58,7 @@ export default function AIAssistant() {
     onError: (error: any) => {
       const errorMessage: Message = {
         role: "assistant",
-        content: "Lo siento, tuve un problema. ¿Puedes intentar de nuevo? 😊",
+        content: "Lo siento, tuve un problema. ¿Puedes intentar de nuevo?",
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -68,14 +68,19 @@ export default function AIAssistant() {
   const handleSendMessage = () => {
     if (!inputMessage.trim() || chatMutation.isPending) return;
 
+    const currentInput = inputMessage;
     const userMessage: Message = {
       role: "user",
-      content: inputMessage,
+      content: currentInput,
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    chatMutation.mutate(inputMessage);
+    setMessages(prev => {
+      // Send only prior messages to backend (it will append the current message)
+      chatMutation.mutate({ message: currentInput, priorHistory: prev });
+      return [...prev, userMessage];
+    });
+    
     setInputMessage("");
   };
 
@@ -199,12 +204,12 @@ export default function AIAssistant() {
 
           {/* Tips Card */}
           <Card className="rounded-3xl p-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800">
-            <h3 className="font-bold text-lg mb-3">💡 Consejos para usar el Ayudante Mágico:</h3>
+            <h3 className="font-bold text-lg mb-3">Consejos para usar el Ayudante Mágico:</h3>
             <ul className="space-y-2 text-muted-foreground">
-              <li>✨ Haz preguntas sobre matemáticas, lectura o ciencias</li>
-              <li>🎨 Pide ideas para proyectos creativos</li>
-              <li>🤔 Si no entiendes algo, pide que te lo explique de otra forma</li>
-              <li>🌟 Recuerda: ¡no hay preguntas tontas!</li>
+              <li>Haz preguntas sobre matemáticas, lectura o ciencias</li>
+              <li>Pide ideas para proyectos creativos</li>
+              <li>Si no entiendes algo, pide que te lo explique de otra forma</li>
+              <li>Recuerda: no hay preguntas tontas</li>
             </ul>
           </Card>
         </div>
