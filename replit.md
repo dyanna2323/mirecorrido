@@ -88,35 +88,41 @@ Preferred communication style: Simple, everyday language.
 - Connection pooling via Neon's WebSocket-based pool
 - Schema push command: `npm run db:push --force`
 - Drizzle ORM for type-safe database operations
+- **Note**: Currently using MemStorage (in-memory). Schema is ready for PostgreSQL migration when needed.
 
 ### Authentication and Authorization
 
-**Implemented**: Username/password authentication system with session management:
+**Implemented**: Replit Auth (OpenID Connect) with multiple login providers:
 
-1. **Username/Password Authentication** (`server/routes.ts`, `server/index.ts`):
-   - Bcrypt password hashing for secure credential storage
-   - User registration with Zod validation
-   - Login with credential verification
-   - Protected API endpoints with `requireAuth` middleware
+**Authentication System** (`server/replitAuth.ts`):
+- OpenID Connect (OIDC) integration via Replit
+- Supports multiple login providers: Google, GitHub, X (Twitter), Apple, Email/Password
+- Automatic user creation on first login
+- Session management with PostgreSQL session store
+- Secure token refresh and expiration handling
 
 **Session Management**:
-- Express sessions with MemoryStore (in-memory storage)
-- Session cookies with 24-hour maxAge
-- Middleware for protected routes (`requireAuth`)
-- User ID stored in `req.session.userId`
+- Express sessions with PostgreSQL session store (connect-pg-simple)
+- Session cookies with 1-week maxAge
+- Middleware for protected routes (`isAuthenticated` from replitAuth)
+- User claims stored in `req.user.claims` (sub, email, first_name, last_name, profile_image_url)
+
+**Authentication Routes**:
+- `/api/login` - Initiates OIDC login flow
+- `/api/logout` - Ends session and redirects to OIDC logout
+- `/api/callback` - OAuth callback handler
+- `/api/auth/user` - Get current authenticated user
 
 **Frontend Integration** (`client/src/hooks/useAuth.ts`):
 - `useAuth` hook for authentication state
-- Login/logout/register functions
 - User data fetching with React Query
 - Automatic redirect to landing page when not authenticated
 
 **Landing Page** (`client/src/pages/Landing.tsx`):
 - Playful Nintendo-style design for kids 5-8
-- Login and registration forms with validation
+- Single "Iniciar Sesión" button that triggers OIDC flow
 - Spanish language interface
-
-**Note**: Google OAuth integration is supported in the schema (googleId, email, profileImageUrl fields) but not yet implemented. This can be added as a future enhancement.
+- Lists all available login providers
 
 ### Component Architecture
 
