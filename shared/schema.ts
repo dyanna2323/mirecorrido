@@ -1,15 +1,28 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, index, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Users table
+// Sessions table for authentication
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// Users table - supports both username/password and Google OAuth
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  username: text("username").unique(),
+  password: text("password"),
   name: text("name").notNull(),
-  avatar: text("avatar").default(""),
+  email: text("email").unique(),
+  googleId: text("google_id").unique(),
+  profileImageUrl: text("profile_image_url"),
   joinedDate: timestamp("joined_date").notNull().defaultNow(),
 });
 
@@ -18,8 +31,21 @@ export const insertUserSchema = createInsertSchema(users).omit({
   joinedDate: true,
 });
 
+export const registerSchema = z.object({
+  username: z.string().min(3).max(50),
+  password: z.string().min(6),
+  name: z.string().min(1),
+});
+
+export const loginSchema = z.object({
+  username: z.string(),
+  password: z.string(),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type RegisterUser = z.infer<typeof registerSchema>;
+export type LoginUser = z.infer<typeof loginSchema>;
 
 // User Stats table (one per user)
 export const userStats = pgTable("user_stats", {
