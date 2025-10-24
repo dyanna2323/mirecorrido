@@ -112,6 +112,7 @@ export class MemStorage implements IStorage {
 
   async upsertUser(userData: UpsertUser): Promise<User> {
     const existing = userData.id ? this.users.get(userData.id) : undefined;
+    const isNewUser = !existing;
     
     const user: User = {
       id: userData.id || randomUUID(),
@@ -124,6 +125,21 @@ export class MemStorage implements IStorage {
     };
     
     this.users.set(user.id, user);
+    
+    // Create initial user stats for new users
+    if (isNewUser) {
+      const statsId = randomUUID();
+      const initialStats: UserStats = {
+        id: statsId,
+        userId: user.id,
+        points: 0,
+        level: 1,
+        xp: 0,
+        streak: 0,
+      };
+      this.userStats.set(statsId, initialStats);
+    }
+    
     return user;
   }
 
