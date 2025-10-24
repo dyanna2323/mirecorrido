@@ -749,7 +749,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const nextLevelXP = stats.level * 300;
       
       res.json({
-        name: user.name,
+        name: [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Usuario',
         points: stats.points,
         level: stats.level,
         xp: stats.xp,
