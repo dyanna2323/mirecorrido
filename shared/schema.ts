@@ -14,38 +14,19 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// Users table - supports both username/password and Google OAuth
+// Users table - for Replit Auth (OIDC)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").unique(),
-  password: text("password"),
-  name: text("name").notNull(),
-  email: text("email").unique(),
-  googleId: text("google_id").unique(),
-  profileImageUrl: text("profile_image_url"),
-  joinedDate: timestamp("joined_date").notNull().defaultNow(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  joinedDate: true,
-});
-
-export const registerSchema = z.object({
-  username: z.string().min(3).max(50),
-  password: z.string().min(6),
-  name: z.string().min(1),
-});
-
-export const loginSchema = z.object({
-  username: z.string(),
-  password: z.string(),
-});
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
-export type RegisterUser = z.infer<typeof registerSchema>;
-export type LoginUser = z.infer<typeof loginSchema>;
 
 // User Stats table (one per user)
 export const userStats = pgTable("user_stats", {
