@@ -35,16 +35,16 @@ export default function Navigation({ userPoints = 1250, userLevel = 5 }: Navigat
               const Icon = item.icon;
               const isActive = location === item.path;
               return (
-                <Link key={item.path} href={item.path}>
-                  <a
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all hover-elevate ${
-                      isActive ? "bg-primary text-primary-foreground" : ""
-                    }`}
-                    data-testid={`nav-${item.label.toLowerCase()}`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="font-semibold">{item.label}</span>
-                  </a>
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all hover-elevate ${
+                    isActive ? "bg-primary text-primary-foreground" : ""
+                  }`}
+                  data-testid={`nav-${item.label.toLowerCase()}`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="font-semibold">{item.label}</span>
                 </Link>
               );
             })}
@@ -64,16 +64,16 @@ export default function Navigation({ userPoints = 1250, userLevel = 5 }: Navigat
             const Icon = item.icon;
             const isActive = location === item.path;
             return (
-              <Link key={item.path} href={item.path}>
-                <a
-                  className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all active-elevate-2 ${
-                    isActive ? "text-primary" : "text-muted-foreground"
-                  }`}
-                  data-testid={`nav-mobile-${item.label.toLowerCase()}`}
-                >
-                  <Icon className={`w-6 h-6 ${isActive ? "scale-110" : ""}`} />
-                  <span className="text-xs font-semibold">{item.label}</span>
-                </a>
+              <Link
+                key={item.path}
+                href={item.path}
+                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all active-elevate-2 ${
+                  isActive ? "text-primary" : "text-muted-foreground"
+                }`}
+                data-testid={`nav-mobile-${item.label.toLowerCase()}`}
+              >
+                <Icon className={`w-6 h-6 ${isActive ? "scale-110" : ""}`} />
+                <span className="text-xs font-semibold">{item.label}</span>
               </Link>
             );
           })}
