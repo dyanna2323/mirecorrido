@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, Trophy, Gift, Award, User } from "lucide-react";
+import { Home, Trophy, Gift, Award, User, Sparkles } from "lucide-react";
 import PointsBadge from "./PointsBadge";
 import LevelIndicator from "./LevelIndicator";
 
@@ -16,6 +16,7 @@ export default function Navigation({ userPoints = 1250, userLevel = 5 }: Navigat
     { path: "/challenges", icon: Trophy, label: "Desafíos" },
     { path: "/rewards", icon: Gift, label: "Premios" },
     { path: "/achievements", icon: Award, label: "Logros" },
+    { path: "/assistant", icon: Sparkles, label: "Ayudante" },
     { path: "/profile", icon: User, label: "Perfil" },
   ];
 

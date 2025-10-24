@@ -11,6 +11,7 @@ import Rewards from "@/pages/Rewards";
 import Achievements from "@/pages/Achievements";
 import Profile from "@/pages/Profile";
 import Questions from "@/pages/Questions";
+import AIAssistant from "@/pages/AIAssistant";
 import Landing from "@/pages/Landing";
 import NotFound from "@/pages/not-found";
 
@@ -39,6 +40,7 @@ function Router() {
         <Route path="/challenges" component={Challenges} />
         <Route path="/rewards" component={Rewards} />
         <Route path="/achievements" component={Achievements} />
+        <Route path="/assistant" component={AIAssistant} />
         <Route path="/profile" component={Profile} />
         <Route path="/questions" component={Questions} />
         <Route component={NotFound} />
