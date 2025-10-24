@@ -62,29 +62,63 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Storage Solutions
 
-**Current Implementation**: In-memory storage using Maps (temporary, for development).
+**Current Implementation**: In-memory storage using Maps for development, with full seed data loaded on startup.
 
-**Planned Implementation**: PostgreSQL database using:
-- **Neon Database** as the serverless PostgreSQL provider (`@neondatabase/serverless`)
-- **Drizzle ORM** for type-safe database queries and migrations
-- Schema defined in `shared/schema.ts` with:
-  - Users table (id, username, password)
-  - Drizzle-Zod integration for runtime validation
+**Database Schema** (`shared/schema.ts`):
+- **Users table**: Supports both username/password and Google OAuth authentication
+  - Fields: id, username, password, name, email, googleId, profileImageUrl, joinedDate
+- **Sessions table**: Express session management with PostgreSQL store
+- **User Stats table**: Points, level, XP, streak tracking per user
+- **Challenges table**: Educational tasks with XP rewards, categories, difficulty, imageUrl
+- **Rewards table**: Redeemable rewards with point requirements
+- **Achievements table**: Unlockable badges with rarity levels
+- **Questions table**: Quiz questions with subjects (maths, english), imageUrl
+- **Junction tables**: userChallenges, userRewards, userAchievements, userAnswers, activityLog
+
+**Seed Data** (`server/seed.ts`):
+- 10 Challenges across 5 categories (learning, creativity, movement, tasks, science)
+- 11 Rewards in 3 tiers (small, medium, large) 
+- 12 Achievements by rarity (common, rare, epic, legendary)
+- 30 Questions (15 maths, 15 english) age-appropriate for 5-8 year olds
+- All content in Spanish with playful emojis
+- Generated images for each challenge category and question subject
 
 **Database Configuration**: 
+- PostgreSQL database available via `DATABASE_URL` environment variable
 - Connection pooling via Neon's WebSocket-based pool
-- Database credentials sourced from `DATABASE_URL` environment variable
-- Migration files stored in `./migrations` directory
-- Schema push command available via `npm run db:push`
+- Schema push command: `npm run db:push --force`
+- Drizzle ORM for type-safe database operations
 
 ### Authentication and Authorization
 
-**Current State**: Basic user schema with username/password fields defined. Authentication middleware and session management not yet implemented.
+**Implemented**: Full authentication system with dual login methods:
+1. **Username/Password Authentication** (`server/auth.ts`):
+   - Bcrypt password hashing
+   - User registration with validation
+   - Login with credential verification
+   
+2. **Google OAuth 2.0 Integration**:
+   - OAuth flow with GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+   - Automatic user creation on first Google login
+   - Profile image import from Google account
 
-**Planned Authentication**: Schema suggests username/password authentication, likely to be extended with:
-- Session management (connect-pg-simple for PostgreSQL session store is installed)
-- Parent/child user roles
-- Protected routes for parent-only features (penalties, reward redemption)
+**Session Management**:
+- Express sessions with PostgreSQL session store
+- Session data stored in `sessions` table
+- Middleware for protected routes (`requireAuth`)
+- User data available via `req.session.userId`
+
+**Frontend Integration** (`client/src/hooks/useAuth.ts`):
+- `useAuth` hook for authentication state
+- Login/logout/register functions
+- User data fetching with React Query
+- Automatic redirect to landing page when not authenticated
+
+**Landing Page** (`client/src/pages/Landing.tsx`):
+- Playful Nintendo-style design for kids 5-8
+- Login and registration forms with validation
+- Google OAuth login button
+- Spanish language interface
 
 ### Component Architecture
 

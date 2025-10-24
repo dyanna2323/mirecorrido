@@ -17,6 +17,7 @@ async function seedChallenges() {
       category: "learning",
       difficulty: 2,
       durationDays: 2,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
     {
       title: "📚 Explorador de Cuentos",
@@ -25,6 +26,7 @@ async function seedChallenges() {
       category: "learning",
       difficulty: 1,
       durationDays: 1,
+      imageUrl: "/attached_assets/generated_images/Reading_stories_for_kids_f83ffe1a.png",
     },
     // Creativity challenges
     {
@@ -34,6 +36,7 @@ async function seedChallenges() {
       category: "creativity",
       difficulty: 1,
       durationDays: 1,
+      imageUrl: "/attached_assets/generated_images/Art_creativity_for_kids_d96b2d88.png",
     },
     {
       title: "🎵 Cantante Estrella",
@@ -42,6 +45,7 @@ async function seedChallenges() {
       category: "creativity",
       difficulty: 2,
       durationDays: 2,
+      imageUrl: "/attached_assets/generated_images/Music_singing_for_kids_eda104fe.png",
     },
     // Movement challenges
     {
@@ -51,6 +55,7 @@ async function seedChallenges() {
       category: "movement",
       difficulty: 2,
       durationDays: 1,
+      imageUrl: "/attached_assets/generated_images/Sports_movement_for_kids_7a6123f4.png",
     },
     {
       title: "🤸 Gimnasta Alegre",
@@ -59,6 +64,7 @@ async function seedChallenges() {
       category: "movement",
       difficulty: 1,
       durationDays: 1,
+      imageUrl: "/attached_assets/generated_images/Sports_movement_for_kids_7a6123f4.png",
     },
     // Tasks challenges
     {
@@ -68,6 +74,7 @@ async function seedChallenges() {
       category: "tasks",
       difficulty: 1,
       durationDays: 1,
+      imageUrl: "/attached_assets/generated_images/Household_tasks_for_kids_51323d61.png",
     },
     {
       title: "📋 Organizador Experto",
@@ -76,6 +83,7 @@ async function seedChallenges() {
       category: "tasks",
       difficulty: 3,
       durationDays: 2,
+      imageUrl: "/attached_assets/generated_images/Household_tasks_for_kids_51323d61.png",
     },
     // Science challenges
     {
@@ -85,6 +93,7 @@ async function seedChallenges() {
       category: "science",
       difficulty: 2,
       durationDays: 2,
+      imageUrl: "/attached_assets/generated_images/Science_exploration_for_kids_f1c3dc4b.png",
     },
     {
       title: "🌱 Explorador Natural",
@@ -93,6 +102,7 @@ async function seedChallenges() {
       category: "science",
       difficulty: 3,
       durationDays: 2,
+      imageUrl: "/attached_assets/generated_images/Science_exploration_for_kids_f1c3dc4b.png",
     },
   ];
 
@@ -291,6 +301,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 10,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
     {
       subject: "maths",
@@ -299,6 +310,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 15,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
     {
       subject: "maths",
@@ -307,6 +319,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 10,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
     {
       subject: "maths",
@@ -315,6 +328,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 10,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
     {
       subject: "maths",
@@ -323,6 +337,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 10,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
     {
       subject: "maths",
@@ -331,6 +346,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 15,
       difficulty: 2,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
     {
       subject: "maths",
@@ -339,6 +355,7 @@ async function seedQuestions() {
       correctAnswer: 2,
       xpReward: 15,
       difficulty: 2,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
     {
       subject: "maths",
@@ -347,6 +364,7 @@ async function seedQuestions() {
       correctAnswer: 2,
       xpReward: 20,
       difficulty: 2,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
     {
       subject: "maths",
@@ -355,6 +373,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 20,
       difficulty: 2,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
     {
       subject: "maths",
@@ -363,6 +382,7 @@ async function seedQuestions() {
       correctAnswer: 2,
       xpReward: 15,
       difficulty: 2,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
     {
       subject: "maths",
@@ -371,6 +391,7 @@ async function seedQuestions() {
       correctAnswer: 2,
       xpReward: 20,
       difficulty: 2,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
     {
       subject: "maths",
@@ -379,6 +400,7 @@ async function seedQuestions() {
       correctAnswer: 2,
       xpReward: 15,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
     {
       subject: "maths",
@@ -387,6 +409,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 10,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
     {
       subject: "maths",
@@ -395,6 +418,7 @@ async function seedQuestions() {
       correctAnswer: 2,
       xpReward: 20,
       difficulty: 2,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
     {
       subject: "maths",
@@ -403,6 +427,7 @@ async function seedQuestions() {
       correctAnswer: 2,
       xpReward: 20,
       difficulty: 2,
+      imageUrl: "/attached_assets/generated_images/Math_learning_for_kids_77d37537.png",
     },
   ];
 
@@ -414,6 +439,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 10,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/English_learning_for_kids_8183349b.png",
     },
     {
       subject: "english",
@@ -422,6 +448,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 10,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/English_learning_for_kids_8183349b.png",
     },
     {
       subject: "english",
@@ -430,6 +457,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 10,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/English_learning_for_kids_8183349b.png",
     },
     {
       subject: "english",
@@ -438,6 +466,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 15,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/English_learning_for_kids_8183349b.png",
     },
     {
       subject: "english",
@@ -446,6 +475,7 @@ async function seedQuestions() {
       correctAnswer: 2,
       xpReward: 10,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/English_learning_for_kids_8183349b.png",
     },
     {
       subject: "english",
@@ -454,6 +484,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 10,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/English_learning_for_kids_8183349b.png",
     },
     {
       subject: "english",
@@ -462,6 +493,7 @@ async function seedQuestions() {
       correctAnswer: 2,
       xpReward: 10,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/English_learning_for_kids_8183349b.png",
     },
     {
       subject: "english",
@@ -470,6 +502,7 @@ async function seedQuestions() {
       correctAnswer: 0,
       xpReward: 15,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/English_learning_for_kids_8183349b.png",
     },
     {
       subject: "english",
@@ -478,6 +511,7 @@ async function seedQuestions() {
       correctAnswer: 2,
       xpReward: 15,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/English_learning_for_kids_8183349b.png",
     },
     {
       subject: "english",
@@ -486,6 +520,7 @@ async function seedQuestions() {
       correctAnswer: 0,
       xpReward: 10,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/English_learning_for_kids_8183349b.png",
     },
     {
       subject: "english",
@@ -494,6 +529,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 15,
       difficulty: 2,
+      imageUrl: "/attached_assets/generated_images/English_learning_for_kids_8183349b.png",
     },
     {
       subject: "english",
@@ -502,6 +538,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 15,
       difficulty: 1,
+      imageUrl: "/attached_assets/generated_images/English_learning_for_kids_8183349b.png",
     },
     {
       subject: "english",
@@ -510,6 +547,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 15,
       difficulty: 2,
+      imageUrl: "/attached_assets/generated_images/English_learning_for_kids_8183349b.png",
     },
     {
       subject: "english",
@@ -518,6 +556,7 @@ async function seedQuestions() {
       correctAnswer: 1,
       xpReward: 20,
       difficulty: 2,
+      imageUrl: "/attached_assets/generated_images/English_learning_for_kids_8183349b.png",
     },
     {
       subject: "english",
@@ -526,6 +565,7 @@ async function seedQuestions() {
       correctAnswer: 2,
       xpReward: 20,
       difficulty: 2,
+      imageUrl: "/attached_assets/generated_images/English_learning_for_kids_8183349b.png",
     },
   ];
 

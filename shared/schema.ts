@@ -75,6 +75,7 @@ export const challenges = pgTable("challenges", {
   difficulty: integer("difficulty").notNull(),
   durationDays: integer("duration_days").notNull().default(1),
   isActive: boolean("is_active").notNull().default(true),
+  imageUrl: text("image_url"),
 });
 
 export const insertChallengeSchema = createInsertSchema(challenges).omit({
@@ -178,6 +179,7 @@ export const questions = pgTable("questions", {
   correctAnswer: integer("correct_answer").notNull(),
   xpReward: integer("xp_reward").notNull().default(10),
   difficulty: integer("difficulty").notNull().default(1),
+  imageUrl: text("image_url"),
 });
 
 export const insertQuestionSchema = createInsertSchema(questions).omit({
