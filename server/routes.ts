@@ -1,8 +1,9 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertActivityLogSchema, insertUserChallengeSchema, insertUserRewardSchema, insertUserAnswerSchema, insertUserAchievementSchema } from "@shared/schema";
+import { insertActivityLogSchema, insertUserChallengeSchema, insertUserRewardSchema, insertUserAnswerSchema, insertUserAchievementSchema, registerSchema, loginSchema } from "@shared/schema";
 import { z } from "zod";
+import bcrypt from "bcrypt";
 
 // Extend Express Request type to include session
 declare module 'express-session' {
@@ -20,6 +21,115 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // ===== AUTHENTICATION ENDPOINTS =====
+  
+  // POST /api/register - Register a new user
+  app.post("/api/register", async (req, res) => {
+    try {
+      const validatedData = registerSchema.parse(req.body);
+      
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(validatedData.username);
+      if (existingUser) {
+        return res.status(400).json({ error: "Username already exists" });
+      }
+      
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+      
+      // Create the user
+      const user = await storage.createUser({
+        username: validatedData.username,
+        password: hashedPassword,
+        name: validatedData.name,
+        email: null,
+        googleId: null,
+        profileImageUrl: null,
+      });
+      
+      // Create initial user stats
+      await storage.createUserStats({
+        userId: user.id,
+        points: 0,
+        level: 1,
+        xp: 0,
+        streak: 0,
+        lastActivityDate: null,
+      });
+      
+      // Set session
+      req.session.userId = user.id;
+      
+      res.status(201).json({ message: "User registered successfully", user: { id: user.id, username: user.username, name: user.name } });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request body", details: error.errors });
+      }
+      console.error("Error registering user:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
+  // POST /api/login - Login user
+  app.post("/api/login", async (req, res) => {
+    try {
+      const validatedData = loginSchema.parse(req.body);
+      
+      // Get user by username
+      const user = await storage.getUserByUsername(validatedData.username);
+      if (!user || !user.password) {
+        return res.status(401).json({ error: "Invalid username or password" });
+      }
+      
+      // Verify password
+      const isValidPassword = await bcrypt.compare(validatedData.password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Invalid username or password" });
+      }
+      
+      // Set session
+      req.session.userId = user.id;
+      
+      res.json({ message: "Login successful", user: { id: user.id, username: user.username, name: user.name } });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request body", details: error.errors });
+      }
+      console.error("Error logging in:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
+  // GET /api/auth/user - Get current authenticated user
+  app.get("/api/auth/user", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json({ id: user.id, username: user.username, name: user.name, email: user.email, profileImageUrl: user.profileImageUrl });
+    } catch (error) {
+      console.error("Error fetching authenticated user:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
+  // POST /api/logout - Logout user
+  app.post("/api/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Error destroying session:", err);
+        return res.status(500).json({ error: "Error logging out" });
+      }
+      res.json({ message: "Logout successful" });
+    });
+  });
   
   // ===== AUTHENTICATED USER ENDPOINTS =====
   
