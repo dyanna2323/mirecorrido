@@ -1,6 +1,6 @@
 import {
   type User,
-  type InsertUser,
+  type UpsertUser,
   type UserStats,
   type InsertUserStats,
   type Challenge,
@@ -25,10 +25,9 @@ import {
 import { randomUUID } from "crypto";
 
 export interface IStorage {
-  // User operations
+  // User operations - Replit Auth
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  upsertUser(user: UpsertUser): Promise<User>;
 
   // User Stats operations
   getUserStats(userId: string): Promise<UserStats | undefined>;
@@ -106,28 +105,25 @@ export class MemStorage implements IStorage {
     this.activityLog = new Map();
   }
 
-  // User operations
+  // User operations - Replit Auth
   async getUser(id: string): Promise<User | undefined> {
     return this.users.get(id);
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find((user) => user.username === username);
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const existing = userData.id ? this.users.get(userData.id) : undefined;
+    
     const user: User = {
-      id,
-      username: insertUser.username || null,
-      password: insertUser.password || null,
-      name: insertUser.name,
-      email: insertUser.email || null,
-      googleId: insertUser.googleId || null,
-      profileImageUrl: insertUser.profileImageUrl || null,
-      joinedDate: new Date(),
+      id: userData.id || randomUUID(),
+      email: userData.email || null,
+      firstName: userData.firstName || null,
+      lastName: userData.lastName || null,
+      profileImageUrl: userData.profileImageUrl || null,
+      createdAt: existing?.createdAt || new Date(),
+      updatedAt: new Date(),
     };
-    this.users.set(id, user);
+    
+    this.users.set(user.id, user);
     return user;
   }
 
@@ -176,6 +172,7 @@ export class MemStorage implements IStorage {
       ...insertChallenge,
       durationDays: insertChallenge.durationDays ?? 1,
       isActive: insertChallenge.isActive ?? true,
+      imageUrl: insertChallenge.imageUrl ?? null,
     };
     this.challenges.set(id, challenge);
     return challenge;
@@ -322,6 +319,7 @@ export class MemStorage implements IStorage {
       ...insertQuestion,
       xpReward: insertQuestion.xpReward ?? 10,
       difficulty: insertQuestion.difficulty ?? 1,
+      imageUrl: insertQuestion.imageUrl ?? null,
     };
     this.questions.set(id, question);
     return question;
